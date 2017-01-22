@@ -1,8 +1,5 @@
 package com.example.zqh.custombubbleimage;
 
-import android.content.Context;
-import android.content.pm.PackageManager;
-import android.content.res.Resources;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
@@ -48,15 +45,13 @@ public class MainActivity extends AppCompatActivity {
             public void onClick(View view) {
                 Drawable bgdr;
                 Bitmap bubble_bitmap;
-                Bitmap new_bitmap = getHcBitmap(MainActivity.this, "com.handcent.sms.skin.christmas20172", "pop_dialog_normal1");
-                Bitmap bmp_up = BitmapFactory.decodeResource(getResources(), R.drawable.tesetpic1);
                 if (isright) {
-                    bgdr = getReversedBg("pop_dialog_normal1");
-                    bubble_bitmap = getRoundCornerImage(new_bitmap, bmp_up, 0);
+                    bgdr = getReversedBg(R.drawable.pop_dialog_normal2);
+                    bubble_bitmap = getRoundCornerImage(R.drawable.bubble_come, R.drawable.tesetpic1, 0);
                     isright = false;
                 } else {
-                    bgdr = ContextCompat.getDrawable(MainActivity.this,R.drawable.pop_dialog_normal1);
-                    bubble_bitmap = getRoundCornerImage(new_bitmap, bmp_up, 1);
+                    bgdr = ContextCompat.getDrawable(MainActivity.this,R.drawable.pop_dialog_normal2);
+                    bubble_bitmap = getRoundCornerImage(R.drawable.bubble_come, R.drawable.tesetpic1, 1);
                     isright = true;
                 }
 
@@ -87,9 +82,8 @@ public class MainActivity extends AppCompatActivity {
      *
      * @return
      */
-    public Drawable getReversedBg(String drawableName) {
-        Bitmap  bgdrawable = getHcBitmap(MainActivity.this,
-                "com.handcent.sms.skin.christmas20172", drawableName);
+    public Drawable getReversedBg(int drawableId) {
+        Bitmap  bgdrawable = BitmapFactory.decodeResource(getResources(), drawableId);
         Bitmap new_bitmap;
         Rect rect3 = new Rect();
 
@@ -98,6 +92,7 @@ public class MainActivity extends AppCompatActivity {
         Rect rect4 = getRectByByte(imgbyts_normal);//原始的Rect
         new_bitmap = reverseBitmap(bgdrawable, 0);//翻转图片获得新的图片
         imgbyts_change = getReverImgByte(ByteBuffer.wrap(imgbyts_normal),new_bitmap.getWidth()).array();//翻转图片的字节数组得到反转后字节数组
+        Log.i("Chunk","imgbyts_normal:"+bufferToHex(imgbyts_normal)+"\n"+"imgbyts_change:"+bufferToHex(imgbyts_change));
         //因为翻转，所有
         rect3.set(rect4.right, rect4.top, rect4.left, rect4.bottom);
         NinePatchDrawable ninePatchDrawable =
@@ -110,13 +105,16 @@ public class MainActivity extends AppCompatActivity {
     /**
      * 气泡图片
      *
-     * @param bgdrawable
-     * @param bitmap_in
+     * @param bgdrawableid
+     * @param bitmap_in_id
      * @return
      */
-    public Bitmap getRoundCornerImage(Bitmap bgdrawable, Bitmap bitmap_in, int whitchWay) {
+    public Bitmap getRoundCornerImage(int bgdrawableid, int bitmap_in_id, int whitchWay) {
+        Bitmap bgdrawable =BitmapFactory.decodeResource(getResources(), bgdrawableid);
+        Bitmap bitmap_in =BitmapFactory.decodeResource(getResources(), bitmap_in_id);
         int width = bitmap_in.getWidth();
         int height = bitmap_in.getHeight();
+
         Bitmap roundConcerImage = Bitmap.createBitmap(width, height,
                 Bitmap.Config.ARGB_8888);
         Canvas canvas = new Canvas(roundConcerImage);
@@ -162,9 +160,6 @@ public class MainActivity extends AppCompatActivity {
      * @return
      */
     public static Bitmap reverseBitmap(Bitmap bmp, int flag) {
-//        if (ImageCache.get("reverseBitmap") != null) {
-//            return ImageCache.get("reverseBitmap");
-//        }
         float[] floats = null;
         switch (flag) {
             case 0: // 水平反转
@@ -187,7 +182,6 @@ public class MainActivity extends AppCompatActivity {
             return Bitmap.createBitmap(bmp, 0, 0, bmp.getWidth(),
                     bmp.getHeight(), matrix, true);
         }
-//        ImageCache.put("reverseBitmap", bmp);
         return bmp;
     }
 
@@ -220,8 +214,10 @@ public class MainActivity extends AppCompatActivity {
         //skip 4 bytes
         buffer.putInt(org.getInt());
 
-        int left1 = org.getInt();//+22
-        int right1 = org.getInt();//+22
+        //根据计算，点九图片的底部内容拉伸区，左右间距要变化
+        //整个图片的宽-左点位置=翻转后的左点位置。
+        int left1 = org.getInt();
+        int right1 = org.getInt();
 
         int right2 = imgWidth - left1;
         int left2 = imgWidth - right1;
@@ -234,9 +230,11 @@ public class MainActivity extends AppCompatActivity {
         buffer.putInt(org.getInt());
         buffer.putInt(org.getInt());
 
-        int color_1 = org.getInt();//无色
-        int color_2 = org.getInt();//有色
-        int color_3 = org.getInt();//有色
+
+        //内容区域的颜色也要翻转
+        int color_1 = org.getInt();
+        int color_2 = org.getInt();
+        int color_3 = org.getInt();
 
         buffer.putInt(color_3);
         buffer.putInt(color_2);
@@ -289,32 +287,32 @@ public class MainActivity extends AppCompatActivity {
     }
 
 
-    /**
-     * 根据资源名获取资源图片
-     * @param cnt
-     * @param packName
-     * @param DrawableName
-     * @return
-     */
-    public static Bitmap getHcBitmap(Context cnt, String packName, String DrawableName) {
-        Resources res = null;
-        try {
-            res = cnt.getPackageManager()
-                    .getResourcesForApplication(packName);
-            int resID = res.getIdentifier(DrawableName,
-                    "drawable", packName);
-            if (resID > 0) {
-                return BitmapFactory.decodeResource(res, resID);
-            }
-        } catch (PackageManager.NameNotFoundException e) {
-            e.printStackTrace();
-            res=cnt.getResources();
-            int resID = res.getIdentifier(DrawableName,
-                    "drawable", cnt.getPackageName());
-            return BitmapFactory.decodeResource(res, resID);
-        }
-        return null;
-    }
+//    /**
+//     * 根据资源名获取资源图片
+//     * @param cnt
+//     * @param packName
+//     * @param DrawableName
+//     * @return
+//     */
+//    public static Bitmap getHcBitmap(Context cnt, String packName, String DrawableName) {
+//        Resources res = null;
+//        try {
+//            res = cnt.getPackageManager()
+//                    .getResourcesForApplication(packName);
+//            int resID = res.getIdentifier(DrawableName,
+//                    "drawable", packName);
+//            if (resID > 0) {
+//                return BitmapFactory.decodeResource(res, resID);
+//            }
+//        } catch (PackageManager.NameNotFoundException e) {
+//            e.printStackTrace();
+//            res=cnt.getResources();
+//            int resID = res.getIdentifier(DrawableName,
+//                    "drawable", cnt.getPackageName());
+//            return BitmapFactory.decodeResource(res, resID);
+//        }
+//        return null;
+//    }
 
 
 }
